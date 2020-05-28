@@ -69,7 +69,7 @@ if sys.version_info < (3, 0):
 
 
 from abc import ABCMeta, abstractmethod
-from gameuniterror import GameUnitError
+from gameuniterror import HealthMeterException
 
 
 def weighted_random_selection(obj1, obj2):
@@ -128,7 +128,7 @@ class AbstractGameUnit(metaclass=ABCMeta):
         # raise a custom exception. Refer to chapter on exception handling
         # ------------------------------------------------------------------
         if self.health_meter > self.max_hp:
-            raise GameUnitError("health_meter > max_hp!", 101)
+            raise HealthMeterException("health_meter > max_hp!")
 
         print_bold("You are HEALED!", end=' ')
         self.show_health(bold=True)

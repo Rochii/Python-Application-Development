@@ -44,20 +44,41 @@ This is NOT run as a standalone program. See `attackoftheorcs_v_1_1.py`
 
 class GameUnitError(Exception):
     """Custom exceptions class for the `AbstractGameUnit` and its subclasses"""
-    def __init__(self, message="", code=000):
+    def __init__(self, message=""):
         super().__init__(message)
-        self.error_message = "~"*50 + "\n"
+        self.padding = "~"*50 + "\n"
+        self.error_message = "Unspecified Error!"
 
-        # Alternative approach is to subclass GameUnitError
+class HealthMeterException(GameUnitError):
+    """Custom exception to report Health Meter related problems"""
+    def __init__(self, message=""):
+        super().__init__(message)
+        self.error_message = (self.padding +
+                             "ERROR: Health Meter Problem" +
+                             "\n" + self.padding)
+
+class HutError(Exception):
+    def __init__(self, code):
+        self.error_message = ""
+
         self.error_dict = {
-            000 : "ERROR-000: Unspecified Error",
-            101 : "ERROR-101: Health Meter Problem!",
-            102 : "ERROR-102: Attack issue! Ignored!"
+            000: "E000: Unspecified Error!",
+            101: "E101: Out of range: Number > 5!",
+            102: "E102: Out of range, negative number",
+            103: "E103: Not a number",
         }
 
         try:
             self.error_message += self.error_dict[code]
         except KeyError:
             self.error_message += self.error_dict[000]
-        
-        self.error_message += "\n" + "~"*50
+
+        print("\n Error message:", self.error_message)
+
+
+class HutErrorNumberHigherThanFive(HutError):
+    pass
+
+
+class HutErrorNegativeNumber(HutError):
+    pass
