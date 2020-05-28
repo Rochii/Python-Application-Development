@@ -1,33 +1,43 @@
-import random
-import sys
+from __future__ import print_function
+"""attackoftheorcs_v_1_1
 
-"""ch01_ex03
-
-A text-based game to acquire a hut by defeating the enemy (OOP).
+A text-based game to acquire a hut by defeating the enemy(handle exceptions)
 
 This module is compatible with Python 3.5.x. It contains
 supporting code for the book, Learning Python Application Development,
 Packt Publishing.
 
-This is a supporting example code for example 3 of Chapter 1. It is a
-command line program that illustrates use of OOP concepts. The player
-inputs a hut number. If the occupant is an enemy, the player is given an
-option to 'attack'. Player wins if he defeats the enemy.
- Additionally,the player can 'run away' from the combat, get healed
+General game play:
+The player inputs a hut number. If the occupant is an enemy, the player is
+given an option to 'attack'. Player wins if he defeats the enemy.
+Additionally,the player can 'run away' from the combat, get healed
 in friendly hut and then resume the fight.
 
 In the aforementioned book this is also referred to as
-"Attack of the Orcs v1.0.0". More details can be found in the relevant
+"Attack of the Orcs v1.1.0". More details can be found in the relevant
 chapter of the book..
+
+Demonstrates use of Abstract Base Class (ABC) in Python. This module
+is based on code from file ch01_ex03_AbstractBaseClass.py of Chapter 1
+
+What's new in this module then?
+- Implements some try...except clauses to demonstrate exception handling.
+  Examples:
+  - It fixes the invalid input problem while choosing the hut number.
+  - The heal method, under certain conditions now raises a custom exception
+    called 'GameUnitError'. This is used by heal_exception_example.py
+
+Usage: It is primarily meant to be used along with heal_exception_example.py
+        But you can also run this standalone as noted below:
 
 RUNNING THE PROGRAM:
 --------------------
 - Python 3.5.x must be installed on your system.
 - It is assumed that you have Python 3.5 available in your environment
-  variable PATH. It will be typically available as 'python' or 'python3'.
+  variable PATH. It will be typically available as 'python'
 - Here is the command to execute this code from command prompt
 
-        $ python ch01_ex03.py     ( OR $ python3 ch01_ex03.py)
+        $ python attackoftheorcs_v1_1.py
 
 - See the README file for more information. Or visit python.org for OS
   specific instructions on executing Python from a command prompt.
@@ -40,13 +50,27 @@ RUNNING THE PROGRAM:
    Feel free to add documentation after reading that chapter.
    Description of the code can be found in the book.
 2. Split the code into smaller modules
-3. Make GameUnit to an abstract base class
-4. See the other TODO comments..things you can try fixing as an exercise!
+3. See the other TODO comments..things you can try fixing as an exercise!
 
 :copyright: 2016, Ninad Sathaye
 
 :license: The MIT License (MIT) . See LICENSE file for further details.
 """
+import random
+import sys
+
+if sys.version_info < (3, 0):
+    print("This code requires Python 3.x and is tested with version 3.5.x ")
+    print("Looks like you are trying to run this using "
+          "Python version: %d.%d " % (sys.version_info[0],
+                                      sys.version_info[1]))
+    print("Exiting...")
+    sys.exit(1)
+
+
+from abc import ABCMeta, abstractmethod
+from gameuniterror import GameUnitError
+
 
 def weighted_random_selection(obj1, obj2):
     """Randomly select between two objects based on assigned 'weight'
@@ -66,8 +90,8 @@ def print_bold(msg, end='\n'):
     print("\033[1m" + msg + "\033[0m", end=end)
 
 
-class GameUnit:
-    """A base class for creating various game characters"""
+class AbstractGameUnit(metaclass=ABCMeta):
+    """An Abstract base class for creating various game characters"""
     def __init__(self, name=''):
         self.max_hp = 0
         self.health_meter = 0
@@ -75,8 +99,9 @@ class GameUnit:
         self.enemy = None
         self.unit_type = None
 
+    @abstractmethod
     def info(self):
-        """Information on the unit (overridden in subclasses)"""
+        """Information on the unit (MUST be overridden in subclasses)"""
         pass
 
     def attack(self, enemy):
@@ -95,12 +120,15 @@ class GameUnit:
         """Heal the unit replenishing all the hit points"""
         if self.health_meter == self.max_hp:
             return
-
         if full_healing:
             self.health_meter = self.max_hp
         else:
-            # TODO: Do you see a bug here? it can exceed max hit points!
             self.health_meter += heal_by
+        # ------------------------------------------------------------------
+        # raise a custom exception. Refer to chapter on exception handling
+        # ------------------------------------------------------------------
+        if self.health_meter > self.max_hp:
+            raise GameUnitError("health_meter > max_hp!", 101)
 
         print_bold("You are HEALED!", end=' ')
         self.show_health(bold=True)
@@ -120,7 +148,7 @@ class GameUnit:
             print(msg, end=end)
 
 
-class Knight(GameUnit):
+class Knight(AbstractGameUnit):
     """ Class that represents the game character 'Knight'
 
     The player instance in the game is a Knight instance. Other Knight
@@ -145,9 +173,10 @@ class Knight(GameUnit):
                    hut.occupant every time?
         """
         print_bold("Entering hut %d..." % hut.number, end=' ')
-        is_enemy = (isinstance(hut.occupant, GameUnit) and
+        is_enemy = (isinstance(hut.occupant, AbstractGameUnit) and
                     hut.occupant.unit_type == 'enemy')
         continue_attack = 'y'
+
         if is_enemy:
             print_bold("Enemy sighted!")
             self.show_health(bold=True, end=' ')
@@ -184,7 +213,7 @@ class Knight(GameUnit):
         self.enemy = None
 
 
-class OrcRider(GameUnit):
+class OrcRider(AbstractGameUnit):
     """Class that represents the game character Orc Rider"""
     def __init__(self, name=''):
         super().__init__(name=name)
@@ -253,12 +282,26 @@ class AttackOfTheOrcs:
         print("Current occupants: %s" % self.get_occupants())
         while verifying_choice:
             user_choice = input("Choose a hut number to enter (1-5): ")
-            idx = int(user_choice)
-            if self.huts[idx-1].is_acquired:
-                print("You have already acquired this hut. Try again."
-                      "<INFO: You can NOT get healed in already acquired hut.>")
-            else:
-                verifying_choice = False
+            # --------------------------------------------------------------
+            # try...except illustration for chapter on exception handling.
+            # (Attack Of The Orcs v1.1.0)
+            # --------------------------------------------------------------
+            try:
+                idx = int(user_choice)
+            except ValueError as e:
+                print("Invalid input, args: %s \n" % e.args)
+                continue
+
+            try:
+                if self.huts[idx-1].is_acquired:
+                    print("You have already acquired this hut. Try again."
+                     "<INFO: You can NOT get healed in already acquired hut.>")
+                else:
+                    verifying_choice = False
+            except IndexError:
+                print("Invalid input : ", idx)
+                print("Number should be in the range 1-5. Try again")
+                continue
 
         return idx
 
